@@ -39,298 +39,386 @@ $PAGE->navbar->add(get_string('spreadmanDisplay', 'block_spreadman'));
 $PAGE->set_url('/blocks/spreadman/detail.php');
 $context = context_system::instance();
 $PAGE->set_context($context);
-
+$courseid=optional_param('id','1',PARAM_INT);
 
 $PAGE->set_heading(get_string('pluginname', 'block_spreadman'));
 $PAGE->set_title(get_string('pluginname', 'block_spreadman'));
 echo $OUTPUT->header();
 
 
+//echo "here";
+
+  //print_object($result);
+  //$course = $PAGE->course;
+  //$courseid=$course->id;
+  //echo "courseid=$courseid";
+  $content         = new stdClass;
+  $content->items  = array();
+  $content->text = '<table><tr><th>Name</th><th>Page Location</th></tr>';
+
+
+if ($courseid === 1) {
+        //Must be my home page!  Get all psreadsheets from all courses.
+	//echo "Must be my home page";
+	$courses = enrol_get_my_courses();
+
+	//print_object($courses);
+
+	foreach ($courses as $course){
+
+	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
+		foreach ($result as &$row) {
+                  $q = 'sheet="'.$row->sheetid.'"';
+		    //print_object($row);
+		  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => 'jjj'));
+		  $content->text .= get_sheet_in_course($course->id, $q);
+		}
+
+	}
 
 
 
-/** Main variable for storing the current session id. **/
-$currentsess = '00';
+} else {
 
+	//Add each spreadsheet for this course to block!
+        $orphaned =  array();
+        $title = array();
+	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
+	foreach ($result as &$row) {
+	   //print_object($row);
+	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
+          //echo $row->sheetid;
+          $q = 'sheet="'.$row->sheetid.'"';
+          $name = ($row->name ==NULL) ? 'Untitled Sheet - ' : $row->name;
+          $currentqresult = get_sheet_in_course($courseid, $q);
+          if($currentqresult !== ''){
+          $content->text .= '<tr><td>'.$name.'</td><td>'.$currentqresult.'</td></tr>';
+          } else {
+          array_push($orphaned, $row->sheetid);
+          array_push($title, $name);
+          ///orphan sheet
+          }
+	  
+	}
+}
+//print_object($orphaned);
+  //add orphaned to output
+   $content->text .= '<tr><th>Orphaned Spreadsheets</th></tr>';
+   $i=0;
+   foreach ($orphaned as $orphane) {
+//   $content->text .= '<tr><td>'.$orphane.'</td></tr>';
+   $content->text .= '<tr><td>'.$orphane.'</td><td>'.$title[$i].'</td></tr>';
+   $i++;
+   }
 
-$currentmode = optional_param('mode', '', PARAM_INT);    
-if ($currentmode == 1) { // Make a new request
-    $_SESSION['cmanager_addedmods'] = '';
-    $_SESSION['editingmode'] = 'false';
+  if ($content->text !== ''){
+    $content->text = "<tr><td><h3>Spreadsheets</h3></td></tr>".$content->text;
 
-    $newrec = new stdClass();
-    $newrec->modname = '';
-    $newrec->createdbyid = $USER->id;
-    $newrec->createdate = date("d/m/y H:i:s");
-    $newrec->formid = $DB->get_field('block_cmanager_config', 'value', array('varname'=>'current_active_form_id'));
-      
-    $currentsess = $DB->insert_record('block_cmanager_records', $newrec, true);
-    $_SESSION['cmanager_session'] = $currentsess;
-
-    if (has_capability('block/cmanager:addrecord',$context)) {
-    } else {
-        print_error(get_string('cannotrequestcourse', 'block_cmanager'));
     }
 
+//Now get all charts
+$charttext='';
+if ($courseid === 1) {
+        //Must be my home page!  Get all psreadsheets from all courses.
+	//echo "Must be my home page";
+	$courses = enrol_get_my_courses();
+
+	//print_object($courses);
+
+	foreach ($courses as $course){
+
+	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
+		foreach ($result as &$row) {
+		    //print_object($row);
+                  $q = 'chart="'.$row->id.'"';
+		  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => 'jjj'));
+		  $charttext .= get_sheet_in_course($course->id, $q);
+		}
+
+	}
+
+
+
+} else {
+
+	//Add each chart for this course to block!
+        $orphaned = array();
+        $title = array();
+	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
+	foreach ($result as &$row) {
+	   //print_object($row);
+          $q = 'chart="'.$row->id.'"';
+	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
+          //echo $row->id;
+          $name = ($row->title ==NULL) ? 'Untitled Chart - ' : $row->title;
+          $currentqresult = get_sheet_in_course($courseid, $q);
+          if($currentqresult !== ''){
+          $charttext .= '<tr><td>'.$name.'</td><td>'.$currentqresult.'</td></tr>';
+          }  else {
+          array_push($orphaned, $row->id);
+          array_push($title, $name);
+          ///orphan sheet
+          }
+	  //$charttext .= get_sheet_in_course($courseid, $q);
+	}
 }
-else if ($currentmode == 2) { // editing mode
-    $_SESSION['editingmode'] = 'true';
-    $currentsess = optional_param('edit', '0', PARAM_INT);
-    $_SESSION['cmanager_session'] = $currentsess;
-    $_SESSION['cmanagermode'] = 'admin';
 
-    if (has_capability('block/cmanager:editrecord',$context)) {
-    } else {
-        print_error(get_string('cannoteditrequest', 'block_cmanager'));
-    } 
+  if ($charttext !== ''){
+    $charttext = "<tr><td><h3>Charts/Graphs</h3></td></tr><tr><th>Name</th><th>Page Location</th></tr>".$charttext;
 
-} else { // if a session has already been started
-    $currentsess = $_SESSION['cmanager_session'];
-} 
+    }
 
-$currentrecord =  $DB->get_record('block_cmanager_records', array('id'=>$currentsess), '*', IGNORE_MULTIPLE);
-    
-// Quick hack to stop guests from making requests!      
-if ($USER->id == 1) {
-    echo error('Sorry no guest access, please login.');
-    die;
+
+  //add orphaned to output
+   $charttext .= '<tr><th>Orphaned Charts</th></tr>';
+   $i=0;
+   foreach ($orphaned as $orphane) {
+   $charttext .= '<tr><td>'.$orphane.'</td><td>'.$title[$i].'</td></tr>';
+   $i++;
+   }
+
+
+
+       $content->text .= $charttext;
+
+
+
+       //$content->text .= html_writer::tag('a', 'Open Manager', array('href' => $CFG->wwwroot.'/blocks/spreadman/detail.php'));
+  //$this->content->items[] = html_writer::tag('a', 'Menu Option 1', array('href' => 'some_file.php'));
+  //$this->content->icons[] = html_writer::empty_tag('img', array('src' => 'images/icons/1.gif', 'class' => 'icon'));
+ 
+  // Add more list items here
+ 
+
+
+  echo $content->text.'</table>';
+
+  echo $OUTPUT->footer();
+function get_sheet_in_course($courseid, $q)
+{
+global $DB;
+
+//$sheetid='1411408100';
+//$q='sheet="'.$sheetid.'"';
+//echo $q;
+$modules = $DB->get_records_sql('SELECT name FROM {modules}');
+$course = $DB->get_record('course', array('id' => $courseid));
+$modinfo = get_fast_modinfo($course);
+$i = 1;
+$printed = false;
+$return='';
+//echo "HERE";
+foreach ($modules as $module)
+{
+    $functionname = "block_spreadman_search_module_" . $module->name;
+    $module_result = '';
+    //If a specific function exists called
+    if (function_exists($functionname))
+    {
+        $module_result = call_user_func($functionname, $courseid, $module, $q, $modinfo);
+    }
+    else
+    {
+        $module_result = block_spreadman_search_module($courseid, $module, $q);
+    }
+    if ($module_result != '')
+    {
+        $printed = true;
+    }
+    $return .= $module_result;
+    $i++;
+}
+
+//Sections must be searched apart*****************************
+$section_result = block_spreadman_search_section($courseid, $q);
+
+if ($section_result != '')
+{
+    $printed = true;
+}
+$return .= $section_result;
+////
+
+return $return;
+
+
 }
 
 
+
+function block_spreadman_search_module($courseid, $module, $q)
+{
+    global $CFG, $DB, $OUTPUT;
+    //echo "here2";
+    $ret = '';
+    $sqlWere = 'course=? AND (false';
+    $sqlParams = array($courseid);
+    //At least one search field is needed
+    $onefield = false;
+
+    //The DBman will be use to check if table and field exists
+    $dbman = $DB->get_manager();
+
+
+    //Check if the table exists
+    if ($dbman->table_exists($module->name))
+    {
+        //Check if the fields exists
+        if ($dbman->field_exists($module->name, 'name'))
+        {
+            $sqlWere .= " OR name LIKE ?";
+            $sqlParams[] = "%$q%";
+            $onefield = true;
+        }
+        if ($dbman->field_exists($module->name, 'intro'))
+        {
+            $sqlWere .= " OR intro LIKE ?";
+            $sqlParams[] = "%$q%";
+            $onefield = true;
+        }
+        if ($dbman->field_exists($module->name, 'content'))
+        {
+            $sqlWere .= " OR content LIKE ?";
+            $sqlParams[] = "%$q%";
+            $onefield = true;
+        }
+
+        //Do the search
+        if ($onefield)
+        {
+            $sql = "SELECT * FROM {" . $module->name . "} WHERE $sqlWere)";
+
+            //get sql
+            $results = $DB->get_records_sql($sql, $sqlParams);
+            //To create the link we need more info
+            //find modid
+            $modid = $DB->get_record('modules', array('name' => $module->name));
+
+            foreach ($results as $result)
+            {
+                $this_course_mod = $DB->get_record('course_modules', array('course' => $courseid, 'module' => $modid->id, 'instance' => $result->id));
+                $ret .= "<a href='$CFG->wwwroot/mod/$module->name/view.php?id=$this_course_mod->id'><img src='" . $OUTPUT->pix_url('icon', $module->name) . "' alt='$module->name -'/>&nbsp;$result->name</a><br>";
+            }
+        }
+    }
+    return $ret;
+}
+
+function block_spreadman_search_section($courseid, $q)
+{
+    global $CFG, $DB, $OUTPUT;
+    //echo "HERE SECTION";
+    $ret = '';
+    $sqlParams = array($courseid, "%$q%", "%$q%");
+
+    $sql = "SELECT * FROM {course_sections} WHERE course=? AND (summary LIKE ? OR name LIKE ?)";
+
+    //get sql
+    $results = $DB->get_records_sql($sql, $sqlParams);
+
+    foreach ($results as $result)
+    {
+        $link = "<a href='$CFG->wwwroot/course/view.php?id=$courseid#section-$result->section'><img src='" . $OUTPUT->pix_url('icon', 'label') . "' alt='section - '/>&nbsp;$result->name</a><br>";
+        $ret .= $link;
+    }
+    return $ret;
+}
 
 /**
- * Course request form
- *
- * Main course request form
- * @package    block_cmanager
- * @copyright  2014 Kyle Goslin, Daniel McSweeney
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Search in a module content in the common fields (name, intro, content)
+ * @global stdClass $CFG
+ * @global moodle_database $DB
+ * @global core_renderer $OUTPUT
+ * @param int $courseid The course ID
+ * @param stdClass $module The module object
+ * @param string $q The string searched
+ * @param stdClass $modinfo The modinfo object
+ * @return string Return the result in HTML
  */
-class block_cmanager_courserequest_form extends moodleform {
+function block_spreadman_search_module_label($courseid, $module, $q, $modinfo)
+{
+    global $CFG, $DB, $OUTPUT;
 
-    function definition() {
-   
-        global $CFG;
-        global $currentsess, $DB, $currentrecord;
-    
-        $mform =& $this->_form; // Don't forget the underscore! 
-        
-        $mform->addElement('header', 'mainheader','<span style="font-size:18px">'.  
-                           get_string('modrequestfacility','block_cmanager'). '</span>');
-  
-        $field1desc = $DB->get_field('block_cmanager_config', 'value', 
-                                     array('varname'=>'page1_fielddesc1'), IGNORE_MULTIPLE);
-        $field2desc = $DB->get_field('block_cmanager_config', 'value', 
-                                     array('varname'=>'page1_fielddesc2'), IGNORE_MULTIPLE);
-    
-   
-        // Get the field values
-        $field1title = $DB->get_field('block_cmanager_config', 'value', 
-                                      array('varname'=>'page1_fieldname1'), IGNORE_MULTIPLE);
-        $field2title = $DB->get_field('block_cmanager_config', 'value', 
-                                      array('varname'=>'page1_fieldname2'), IGNORE_MULTIPLE);
-        $field3desc = $DB->get_field('block_cmanager_config', 'value', 
-                                      array('varname'=>'page1_fielddesc3'), IGNORE_MULTIPLE);
-        $field4title = $DB->get_field('block_cmanager_config', 'value', 
-                                      array('varname'=>'page1_fieldname4'), IGNORE_MULTIPLE);
-        $field4desc = $DB->get_field('block_cmanager_config', 'value', 
-                                      array('varname'=>'page1_fielddesc4'), IGNORE_MULTIPLE);
-        //get field 3 status
-        $field3status = $DB->get_field('block_cmanager_config', 'value', 
-                                      array('varname'=>'page1_field3status'), IGNORE_MULTIPLE);
-        
-        //get the value for autokey - the config variable that determines enrolment key auto or prompt
-        $autoKey = $DB->get_field_select('block_cmanager_config', 'value', "varname = 'autoKey'");
-                
-        $selfcat = $DB->get_field_select('block_cmanager_config', 'value', "varname = 'selfcat'");
-    
-        // Page description text
-        $mform->addElement('html', '<p></p>'.get_string('courserequestline1','block_cmanager'));
-        $mform->addElement('html', '<p></p><div style="width:545px; text-align:left"><b>' . 
-                           get_string('step1text','block_cmanager'). '</b></div><p></p><br>');
+    $ret = '';
+    $sqlParams = array($courseid, "%$q%", "%$q%");
 
-        // Programme Code
-        $attributes = array();
+    $sql = "SELECT * FROM {label} WHERE course=? AND (intro LIKE ? OR name LIKE ?)";
+    //get sql
 
-        $attributes['value'] = $currentrecord->modcode;
-        $mform->addElement('text', 'programmecode', $field1title, $attributes, '');
-        $mform->addRule('programmecode', get_string('request_rule1','block_cmanager'), 'required', 
-                        null, 'server', false, false);
-    
+    $results = $DB->get_records_sql($sql, $sqlParams);
+    //To create the link we need more info
+    //find modid
+    $modid = $DB->get_record('modules', array('name' => 'label'));
 
-        $mform->addElement('static', 'description', '', $field1desc);
-        $mform->addElement('html', '<p></p>');
-        $mform->setType('programmecode', PARAM_TEXT);
+    //Get All sections
+    $sections = $modinfo->get_sections();
 
-        // Programme Title  
-        $attributes = array();
-        $attributes['value'] = $currentrecord->modname;
-        $mform->addElement('text', 'programmetitle', $field2title, $attributes);
-        $mform->addRule('programmetitle', get_string('request_rule1','block_cmanager'), 
-                        'required', null, 'server', false, false);
-        $mform->setType('programmetitle', PARAM_TEXT);
+    foreach ($results as $result)
+    {
+        $sectionfounded = null;
+        $this_course_mod = $DB->get_record('course_modules', array('course' => $courseid, 'module' => $modid->id, 'instance' => $result->id));
 
-        $mform->addElement('static', 'description', '', $field2desc);
-        $mform->addElement('html', '<p>&nbsp;<br>');
-        
-     
-        // Programme Mode
-        if ($field3status == 'enabled') {
-            $options = array();
-            $selectQuery = "varname = 'page1_field3value'";
-            $field3Items = $DB->get_recordset_select('block_cmanager_config', $select=$selectQuery);
-
-            foreach ($field3Items as $item) {
-                $value = $item->value;
-                if ($value != '') {
-                    $options[$value] = $value;
-                    $options[$value] = $value;
+        foreach ($sections as $sectionnum => $section)
+        {
+            foreach ($section as $mod)
+            {
+                //If mod id == the course mod id
+                if ($mod == $this_course_mod->id)
+                {
+                    //now find the name of the section
+                    $sectionfounded = $DB->get_record('course_sections', array('course' => $courseid, 'section' => $sectionnum));
+                    break 2;
                 }
-            } 
-
-            $mform->addElement('select', 'programmemode', $field3desc , $options); 
-            $mform->addRule('programmemode', get_string('request_rule2','block_cmanager'), 
-                            'required', null, 'server', false, false);
-            $mform->setDefault('programmemode', $currentrecord->modmode);
-            $mform->setType('programmemode', PARAM_TEXT);
+            }
         }
 
-     
-        // If enabled, give the user the option
-        // to select a category location for the course.
-        if ($selfcat == 'yes') {
-          //  $movetocategories = array();
-            $options = coursecat::make_categories_list('moodle/category:manage'); 
-            $mform->addElement('select', 'menucategory', 'Category', $options);
-            
-            if ($_SESSION['editingmode'] == 'true') {
-                $mform->setDefault('menucategory', $currentrecord->cate);
-             }
+        if ($sectionfounded != null)
+        {
+            $ret .= "<a href='$CFG->wwwroot/course/view.php?id=$courseid#section-$sectionfounded->section'><img src='" . $OUTPUT->pix_url('icon', 'label') . "' alt='label - '/>&nbsp;$result->name</a><br>";
         }
-
-        if (!$autoKey) {
-            // enrolment key
-            $attributes = array();
-            $mform->addElement('html', '<br><br>');
-            $attributes['value'] = $currentrecord->modkey;
-            $mform->addElement('text', 'enrolkey', $field4title, $attributes);
-            $mform->addRule('enrolkey', get_string('request_rule3','block_cmanager'), 'required', 
-                            null, 'server', false, false);
-            $mform->setType('enrolkey', PARAM_TEXT);
-        }
-
-        // Hidden form element to pass the key
-      
-        if (isset($_GET['edit'])) {
-       
-            $mform->addElement('hidden', 'editingmode', $currentsess); 
-            $mform->setType('editingmode', PARAM_TEXT);
-         }
-
-        $mform->addElement('html', '<p></p>&nbsp<p></p>');
-        $buttonarray=array();
-        $buttonarray[] = &$mform->createElement('submit', 'submitbutton', get_string('Continue','block_cmanager'));
-        $buttonarray[] = &$mform->createElement('cancel', 'cancel', get_string('cancel','block_cmanager'));
-        $mform->addGroup($buttonarray, 'buttonar', '', array(' '), false); 
-
     }
+    return $ret;
+}
+
+/**
+ * Search in a module tab content
+ * @global stdClass $CFG
+ * @global moodle_database $DB
+ * @global core_renderer $OUTPUT
+ * @param int $courseid The course ID
+ * @param stdClass $module The module object
+ * @param string $q The string searched
+ * @param stdClass $modinfo The modinfo object
+ * @return string Return the result in HTML
+ */
+function block_spreadman_search_module_tab($courseid, $module, $q, $modinfo)
+{
+    global $CFG, $DB, $OUTPUT;
+
+    $ret = '';
+    $sqlParams = array($courseid, "%$q%", "%$q%", "%$q%", "%$q%");
+
+    $sql = "SELECT {tab_content}.id as tabcontentid, {tab}.id as id,{tab}.name, {tab}.intro, {tab}.course, {tab_content}.tabname, {tab_content}.tabcontent
+                    FROM {tab_content} 
+                        INNER JOIN {tab} ON {tab_content}.tabid = {tab}.id AND {tab}.course = ?
+                    WHERE {tab}.name LIKE ? OR {tab}.intro LIKE ?
+                          OR {tab_content}.tabname LIKE ? OR {tab_content}.tabcontent LIKE ?";
+    //get sql
+    $results = $DB->get_records_sql($sql, $sqlParams);
+    //To create the link we need more info
+    //find modid
+    $modid = $DB->get_record('modules', array('name' => 'tab'));
+    $c = 1;
+    foreach ($results as $result)
+    {
+        $this_course_mod = $DB->get_record('course_modules', array('course' => $courseid, 'module' => $modid->id, 'instance' => $result->id));
+        $ret .= "<a href='$CFG->wwwroot/mod/tab/view.php?id=$this_course_mod->id'><img src='" . $OUTPUT->pix_url('icon', 'tab') . "' alt=''/>&nbsp;$result->name</a><br>";
+        $c++;
+    }
+
+    return $ret;
 }
 
 
-$mform = new block_cmanager_courserequest_form();//name of the form you defined in file above.
-
-if ($mform->is_cancelled()) {
-    echo '<script>window.location="module_manager.php";</script>';
-    die;
-} else if ($fromform=$mform->get_data()) {
-
-    global $USER;
-    global $COURSE;
-    global $CFG;
-    
-    $newrec = new stdClass();
-    $newrec->id = $currentsess;
-
-    $newrec->modname = $fromform->programmetitle;
-    $newrec->modcode = $fromform->programmecode;
-    $fromform->menucategory;
-
-    if (!empty($fromform->menucategory)) {
-        $newrec->cate = $fromform->menucategory;
-    }
-
-    if (!empty($fromform->enrolkey)) {
-        $newrec->modkey = $fromform->enrolkey;
-    }
-
-    if (!empty($fromform->programmemode)) {
-        $newrec->modmode = $fromform->programmemode;
-    }
-
-    $DB->update_record('block_cmanager_records', $newrec); 
 
 
-    $postcode = $fromform->programmecode;
-
-    $postmode = '';
-    if (!empty($fromform->programmemode)) {
-      $postmode = $fromform->programmemode;
-    }
-    // Find which records are similar to the one which we are currently looking for.
-    $spacecheck =  substr($postcode, 0, 4) . ' ' . substr($postcode, 4, strlen($postcode));
-
-    if (strpos($spacecheck, '?') !== false) {
-        $spacecheck = str_replace('?', '', $spacecheck);
-    }
-
-    if (strpos($postmode, '?') !== false) {
-        $postmode = str_replace('?', '', $postmode);
-    }
-
-    if (strpos($postcode, '?') !== false) {
-        $postcode = str_replace('?', '', $postcode);
-    }
-
- 
-    // If we are in editing mode move to editing
-
-    $editingmode = $_SESSION['editingmode'];
-
-    if ($editingmode == 'true'){
-        $editsessid = $_SESSION['cmanager_session'];
-        echo "<script>window.location='course_new.php?mode=2&edit=$editsessid';</script>";
-        die;
-    }
-
-
-
- 
-    // If we are not in editing mode, continue search or creation
-    $selectquery = "shortname LIKE '%".addslashes($postcode)."%'                    
-                    OR (shortname LIKE '%".addslashes($spacecheck)."%' 
-                    AND shortname LIKE '%".addslashes($postmode)."%')
-                    OR shortname LIKE '%".addslashes($spacecheck)."%' ";
-
-    
-    $recordsexist = $DB->record_exists_select('course', $selectquery);
-    if ($recordsexist) {
-        echo "<script>window.location='course_exists.php';</script>";
-        die;
-    } else{
-        echo "<script>window.location='course_new.php';</script>";
-        die; 
-    }
-}
-
-
-$mform->focus();
-$mform->set_data($mform);
-$mform->display();
-
-
-if (!empty($currentrecord->cate)) {
-    echo '<script> document.getElementById("menucategory").value = '.$currentrecord->cate.'; </script> ';
-}
-
-
-echo $OUTPUT->footer();

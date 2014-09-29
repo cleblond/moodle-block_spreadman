@@ -22,7 +22,7 @@ global  $USER, $DB, $CFG;
   $this->content         = new stdClass;
   $this->content->items  = array();
   $this->content->icons  = array();
-  $this->content->footer = 'Footer here...';
+//  $this->content->footer = 'Footer here...';
   $this->content->text = '';
 
 
@@ -32,32 +32,88 @@ if ($courseid === "1") {
 	$courses = enrol_get_my_courses();
 
 	//print_object($courses);
-/*
+
 	foreach ($courses as $course){
 
 	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
 		foreach ($result as &$row) {
+                  $q = 'sheet="'.$row->sheetid.'"';
 		    //print_object($row);
-		  $this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
-		  $this->content->text .= $this->get_sheet_in_course($course->id, $row->sheetid);
+		  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => 'jjj'));
+		  $this->content->text .= $this->get_sheet_in_course($course->id, $q);
 		}
 
 	}
-*/
-       $this->content->text = html_writer::tag('a', 'Open Manager', array('href' => $CFG->wwwroot.'/blocks/spreadman/detail.php'));
+
+
 
 } else {
 
 	//Add each spreadsheet for this course to block!
 	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
 	foreach ($result as &$row) {
-	    //print_object($row);
-	  $this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
-	  $this->content->text .= $this->get_sheet_in_course($courseid, $row->sheetid);
+	   //print_object($row);
+	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
+          //echo $row->sheetid;
+          $q = 'sheet="'.$row->sheetid.'"';
+	  $this->content->text .= $this->get_sheet_in_course($courseid, $q);
 	}
 }
 
-  $this->content->items[] = html_writer::tag('a', 'Menu Option 1', array('href' => 'some_file.php'));
+
+  if ($this->content->text !== ''){
+    $this->content->text = "<strong>Spreadsheets</strong><br>".$this->content->text;
+
+    }
+
+//Now get all charts
+$charttext='';
+if ($courseid === "1") {
+        //Must be my home page!  Get all psreadsheets from all courses.
+	echo "Must be my home page";
+	$courses = enrol_get_my_courses();
+
+	//print_object($courses);
+
+	foreach ($courses as $course){
+
+	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
+		foreach ($result as &$row) {
+		    //print_object($row);
+                  $q = 'chart="'.$row->id.'"';
+		  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => 'jjj'));
+		  $charttext .= $this->get_sheet_in_course($course->id, $q);
+		}
+
+	}
+
+
+
+} else {
+
+	//Add each spreadsheet for this course to block!
+	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
+	foreach ($result as &$row) {
+	   //print_object($row);
+          $q = 'chart="'.$row->id.'"';
+	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
+          echo $row->id;
+	  $charttext .= $this->get_sheet_in_course($courseid, $q);
+	}
+}
+
+  if ($charttext !== ''){
+    $charttext = "<strong>Charts/Graphs</strong><br>".$charttext;
+
+    }
+
+
+       $this->content->text .= $charttext.'<br>';
+
+
+
+       $this->content->text .= html_writer::tag('a', 'Open Manager', array('href' => $CFG->wwwroot.'/blocks/spreadman/detail.php?id='.$courseid));
+  //$this->content->items[] = html_writer::tag('a', 'Menu Option 1', array('href' => 'some_file.php'));
   //$this->content->icons[] = html_writer::empty_tag('img', array('src' => 'images/icons/1.gif', 'class' => 'icon'));
  
   // Add more list items here
@@ -73,15 +129,20 @@ if ($courseid === "1") {
 
 
 
-public function get_sheet_in_course($courseid, $sheetid)
+public function get_sheet_in_course($courseid, $q)
 {
 global $DB;
-$q='sheet="'.$sheetid.'"';
+
+//$sheetid='1411408100';
+//$q='sheet="'.$sheetid.'"';
+//echo $q;
 $modules = $DB->get_records_sql('SELECT name FROM {modules}');
 $course = $DB->get_record('course', array('id' => $courseid));
 $modinfo = get_fast_modinfo($course);
 $i = 1;
 $printed = false;
+$return='';
+//echo "HERE";
 foreach ($modules as $module)
 {
     $functionname = "block_spreadman_search_module_" . $module->name;
@@ -99,7 +160,7 @@ foreach ($modules as $module)
     {
         $printed = true;
     }
-    $this->content->text .= $module_result;
+    $return .= $module_result;
     $i++;
 }
 
@@ -110,10 +171,10 @@ if ($section_result != '')
 {
     $printed = true;
 }
-$this->content->text .= $section_result;
+$return .= $section_result;
 ////
 
-
+return $return;
 
 
 }
@@ -128,7 +189,7 @@ $this->content->text .= $section_result;
 public function block_spreadman_search_module($courseid, $module, $q)
 {
     global $CFG, $DB, $OUTPUT;
-
+    //echo "here2";
     $ret = '';
     $sqlWere = 'course=? AND (false';
     $sqlParams = array($courseid);
@@ -176,7 +237,7 @@ public function block_spreadman_search_module($courseid, $module, $q)
             foreach ($results as $result)
             {
                 $this_course_mod = $DB->get_record('course_modules', array('course' => $courseid, 'module' => $modid->id, 'instance' => $result->id));
-                $ret .= "<li><a href='$CFG->wwwroot/mod/$module->name/view.php?id=$this_course_mod->id'><img src='" . $OUTPUT->pix_url('icon', $module->name) . "' alt='$module->name -'/>&nbsp;$result->name</a></li>";
+                $ret .= "<a href='$CFG->wwwroot/mod/$module->name/view.php?id=$this_course_mod->id'><img src='" . $OUTPUT->pix_url('icon', $module->name) . "' alt='$module->name -'/>&nbsp;$result->name</a><br>";
             }
         }
     }
@@ -195,7 +256,7 @@ public function block_spreadman_search_module($courseid, $module, $q)
 public function block_spreadman_search_section($courseid, $q)
 {
     global $CFG, $DB, $OUTPUT;
-
+    //echo "HERE SECTION";
     $ret = '';
     $sqlParams = array($courseid, "%$q%", "%$q%");
 
@@ -206,7 +267,7 @@ public function block_spreadman_search_section($courseid, $q)
 
     foreach ($results as $result)
     {
-        $link = "<li><a href='$CFG->wwwroot/course/view.php?id=$courseid#section-$result->section'><img src='" . $OUTPUT->pix_url('icon', 'label') . "' alt='section - '/>&nbsp;$result->name</a></li>";
+        $link = "<a href='$CFG->wwwroot/course/view.php?id=$courseid#section-$result->section'><img src='" . $OUTPUT->pix_url('icon', 'label') . "' alt='section - '/>&nbsp;$result->name</a><br>";
         $ret .= $link;
     }
     return $ret;
@@ -223,7 +284,7 @@ public function block_spreadman_search_section($courseid, $q)
  * @param stdClass $modinfo The modinfo object
  * @return string Return the result in HTML
  */
-function block_spreadman_search_module_label($courseid, $module, $q, $modinfo)
+public function block_spreadman_search_module_label($courseid, $module, $q, $modinfo)
 {
     global $CFG, $DB, $OUTPUT;
 
@@ -262,7 +323,7 @@ function block_spreadman_search_module_label($courseid, $module, $q, $modinfo)
 
         if ($sectionfounded != null)
         {
-            $ret .= "<li><a href='$CFG->wwwroot/course/view.php?id=$courseid#section-$sectionfounded->section'><img src='" . $OUTPUT->pix_url('icon', 'label') . "' alt='label - '/>&nbsp;$result->name</a></li>";
+            $ret .= "<a href='$CFG->wwwroot/course/view.php?id=$courseid#section-$sectionfounded->section'><img src='" . $OUTPUT->pix_url('icon', 'label') . "' alt='label - '/>&nbsp;$result->name</a><br>";
         }
     }
     return $ret;
@@ -300,7 +361,7 @@ function block_spreadman_search_module_tab($courseid, $module, $q, $modinfo)
     foreach ($results as $result)
     {
         $this_course_mod = $DB->get_record('course_modules', array('course' => $courseid, 'module' => $modid->id, 'instance' => $result->id));
-        $ret .= "<li><a href='$CFG->wwwroot/mod/tab/view.php?id=$this_course_mod->id'><img src='" . $OUTPUT->pix_url('icon', 'tab') . "' alt=''/>&nbsp;$result->name</a></li>";
+        $ret .= "<a href='$CFG->wwwroot/mod/tab/view.php?id=$this_course_mod->id'><img src='" . $OUTPUT->pix_url('icon', 'tab') . "' alt=''/>&nbsp;$result->name</a><br>";
         $c++;
     }
 
