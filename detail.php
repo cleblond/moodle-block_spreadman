@@ -39,7 +39,7 @@ $PAGE->navbar->add('Manager');
 $PAGE->set_url('/blocks/spreadman/detail.php');
 $context = context_system::instance();
 $PAGE->set_context($context);
-$courseid=optional_param('id','1',PARAM_INT);
+$courseid=optional_param('id',NULL,PARAM_INT);
 
 $PAGE->set_heading(get_string('pluginname', 'block_spreadman'));
 $PAGE->set_title(get_string('pluginname', 'block_spreadman'));
@@ -52,10 +52,34 @@ echo $OUTPUT->header();
   //$course = $PAGE->course;
   //$courseid=$course->id;
   //echo "courseid=$courseid";
+$courses = enrol_get_my_courses();
+$cselector = '';
+if(!isset($courseid) or $courseid == 1){
+
+//print_object($courses);
+$firstcourseid = key($courses);
+$courseid = $firstcourseid;
+}
+
+    reset($courses);
+    $cselector = 'Choose Course - <select onChange="document.location.href=this[selectedIndex].value">';
+    foreach ($courses as $course){
+    $selected = ($courseid == $course->id) ? 'selected' : '';
+    $cselector .= '<option value="detail.php?id='.$course->id.'" '.$selected.'>'.$course->shortname.'</option>';
+    }
+    $cselector .= '</select>';
+
+
+
+
   $content         = new stdClass;
   $content->items  = array();
   $content->text = '<table><tr><th>Name</th><th>Page Location</th></tr>';
 
+
+
+
+//echo 'courseid='.$courseid;
 
 if ($courseid === 1) {
         //Must be my home page!  Get all psreadsheets from all courses.
@@ -113,7 +137,7 @@ if ($courseid === 1) {
    }
 
   if ($content->text !== ''){
-    $content->text = "<tr><td><h3>Spreadsheets</h3></td></tr>".$content->text;
+    $content->text = $cselector."<tr><td><h3>Spreadsheets</h3></td></tr>".$content->text;
 
     }
 
