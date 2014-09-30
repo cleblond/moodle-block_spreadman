@@ -35,7 +35,7 @@ require_login();
 /** Navigation Bar **/
 $PAGE->navbar->ignore_active();
 $PAGE->navbar->add(get_string('spreadmanDisplay', 'block_spreadman'));
-//$PAGE->navbar->add(get_string('modrequestfacility', 'block_cmanager'));
+$PAGE->navbar->add('Manager');
 $PAGE->set_url('/blocks/spreadman/detail.php');
 $context = context_system::instance();
 $PAGE->set_context($context);
@@ -89,7 +89,8 @@ if ($courseid === 1) {
 	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
           //echo $row->sheetid;
           $q = 'sheet="'.$row->sheetid.'"';
-          $name = ($row->name ==NULL) ? 'Untitled Sheet - ' : $row->name;
+          $name = ($row->name ==NULL) ? 'Untitled Sheet' : $row->name;
+          $name = '<a href="view.php?courseid='.$courseid.'&sheetid='.$row->sheetid.'">'.$name.'</a>';
           $currentqresult = get_sheet_in_course($courseid, $q);
           if($currentqresult !== ''){
           $content->text .= '<tr><td>'.$name.'</td><td>'.$currentqresult.'</td></tr>';
@@ -107,7 +108,7 @@ if ($courseid === 1) {
    $i=0;
    foreach ($orphaned as $orphane) {
 //   $content->text .= '<tr><td>'.$orphane.'</td></tr>';
-   $content->text .= '<tr><td>'.$orphane.'</td><td>'.$title[$i].'</td></tr>';
+   $content->text .= '<tr><td>'.$title[$i].'</td></tr>';
    $i++;
    }
 
@@ -150,7 +151,8 @@ if ($courseid === 1) {
           $q = 'chart="'.$row->id.'"';
 	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
           //echo $row->id;
-          $name = ($row->title ==NULL) ? 'Untitled Chart - ' : $row->title;
+          $name = ($row->title ==NULL) ? 'Untitled Chart' : $row->title;
+          $name = '<a href="view.php?courseid='.$courseid.'&chartid='.$row->id.'">'.$name.'</a>';
           $currentqresult = get_sheet_in_course($courseid, $q);
           if($currentqresult !== ''){
           $charttext .= '<tr><td>'.$name.'</td><td>'.$currentqresult.'</td></tr>';
@@ -173,7 +175,7 @@ if ($courseid === 1) {
    $charttext .= '<tr><th>Orphaned Charts</th></tr>';
    $i=0;
    foreach ($orphaned as $orphane) {
-   $charttext .= '<tr><td>'.$orphane.'</td><td>'.$title[$i].'</td></tr>';
+   $charttext .= '<tr><td>'.$title[$i].'</td></tr>';
    $i++;
    }
 
