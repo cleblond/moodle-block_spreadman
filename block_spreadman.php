@@ -18,7 +18,7 @@ global  $USER, $DB, $CFG;
   //print_object($result);
   $course = $this->page->course;
   $courseid=$course->id;
-  echo "courseid=$courseid";
+  //echo "courseid=$courseid";
   $this->content         = new stdClass;
   $this->content->items  = array();
   $this->content->icons  = array();
@@ -28,7 +28,7 @@ global  $USER, $DB, $CFG;
 
 if ($courseid === "1") {
         //Must be my home page!  Get all psreadsheets from all courses.
-	echo "Must be my home page";
+	//echo "Must be my home page";
 	$courses = enrol_get_my_courses();
 
 	//print_object($courses);
@@ -71,7 +71,7 @@ $charttext='';
 if ($courseid === "1") {
 
         //Must be my home page!  Get all psreadsheets from all courses.
-	echo "Must be my home page";
+	//echo "Must be my home page";
 	$courses = enrol_get_my_courses();
 
 	//print_object($courses);
@@ -98,7 +98,7 @@ if ($courseid === "1") {
 	   //print_object($row);
           $q = 'chart="'.$row->id.'"';
 	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
-          echo $row->id;
+          //echo $row->id;
 	  $charttext .= $this->get_sheet_in_course($courseid, $q);
 	}
 }
