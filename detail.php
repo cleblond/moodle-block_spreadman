@@ -53,16 +53,21 @@ echo $OUTPUT->header();
   //$courseid=$course->id;
   //echo "courseid=$courseid";
 $courses = enrol_get_my_courses();
-$cselector = '';
 if(!isset($courseid) or $courseid == 1){
+
+$cselector = '';
 
 //print_object($courses);
 $firstcourseid = key($courses);
 $courseid = $firstcourseid;
 }
 
-    reset($courses);
+//echo $courseid;
+
+   // reset($courses);
     $cselector = 'Choose Course - <select onChange="document.location.href=this[selectedIndex].value">';
+    $selected = ($courseid == 0) ? 'selected' : '';
+    $cselector .= '<option value="detail.php?id=0" '.$selected.'>Orphaned</option>';
     foreach ($courses as $course){
     $selected = ($courseid == $course->id) ? 'selected' : '';
     $cselector .= '<option value="detail.php?id='.$course->id.'" '.$selected.'>'.$course->shortname.'</option>';
@@ -74,14 +79,49 @@ $courseid = $firstcourseid;
 
   $content         = new stdClass;
   $content->items  = array();
-  $content->text = '<table><tr><th>Name</th><th>Page Location</th></tr>';
-  $spreadtext='';
 
+  $spreadtext='';
+$currentqresult = '';
+if ($courseid === 0) {
+  $content->text = '<table><tr><th>Orphaned Spreadsheets</th><th></th></tr>';
+        //Must be my home page!  Get all psreadsheets from all courses.
+	//echo "Must be my home page";
+	$courses = enrol_get_my_courses();
+
+	//print_object($courses);
+	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
+       foreach ($result as $row) {
+	   foreach ($courses as $course){
+                  $q = 'sheet="'.$row->sheetid.'"';
+		    //print_object($row);
+		  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => 'jjj'));
+		  $currentqresult .= get_sheet_in_course($course->id, $q);
+                  
+		}
+
+                if($currentqresult === ''){
+                        
+                        $name = ($row->name == NULL) ? 'Untitled Sheet' : $row->name;
+                        $name = '<a href="view.php?courseid='.$courseid.'&sheetid='.$row->sheetid.'">'.$name.'</a>';
+                        //echo $name;
+                        $spreadtext .= '<tr><td>'.$name.'</td><td>'.$currentqresult.'</td></tr>';
+         	}
+                $currentqresult = '';;
+
+
+
+
+	}
+    $content->text .= $cselector.$spreadtext;
+    //echo $content->;
+
+} else {
+  $content->text = '<table>';
 	//Add each spreadsheet for this course to block!
         $orphaned =  array();
         $title = array();
 	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
-	foreach ($result as &$row) {
+	foreach ($result as $row) {
 	   //print_object($row);
 	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
           //echo $row->sheetid;
@@ -102,36 +142,78 @@ $courseid = $firstcourseid;
 
         if ($spreadtext =='') {
         
-        $content->text .= '<tr><td>No spreadsheets in this course</td></tr>';
+        $content->text .= '<tr><td>No spreadsheets in this course</td><td></td></tr>';
         } else {
-        $content->text .= $spreadtext;
+        $content->text .= '<table><tr><th>Name</th><th>Page Location</th></tr>'.$spreadtext;
         } 
 
 
+/*
+$currentqresult = '';
 //print_object($orphaned);
   //add orphaned to output
-   $content->text .= '<tr><th>Orphaned Spreadsheets</th></tr>';
+   $content->text .= '<tr><th>Orphaned Spreadsheets</th><td></td></tr>';
    $i=0;
    foreach ($orphaned as $orphane) {
 //   $content->text .= '<tr><td>'.$orphane.'</td></tr>';
-   $content->text .= '<tr><td>'.$title[$i].'</td></tr>';
+   $content->text .= '<tr><td>'.$title[$i].'</td><td></td></tr>';
    $i++;
    }
-
+*/
   if ($content->text !== ''){
-    $content->text = $cselector."<tr><td><h3>Spreadsheets</h3></td></tr>".$content->text;
+    $content->text = $cselector."<tr><td><h3>Spreadsheets</h3></td><td></td></tr>".$content->text;
 
     }
+
+}  ///end if courseid==0
+
+
 
 //Now get all charts
 $charttext='';
 
+if ($courseid === 0) {
+$charttext .= '<tr><th>Orphaned Charts</th><th>'.$currentqresult.'</th></tr>';
+ 	$courses = enrol_get_my_courses();
 
-	//Add each chart for this course to block!
+	//print_object($courses);
+	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
+       foreach ($result as $row) {
+	   foreach ($courses as $course){
+                  $q = 'chart="'.$row->id.'"';
+		    //print_object($row);
+		  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => 'jjj'));
+		  $currentqresult .= get_sheet_in_course($course->id, $q);
+                  
+		}
+
+                if($currentqresult === ''){
+                        
+                        $name = ($row->title == NULL) ? 'Untitled Chart' : $row->title;
+                        $name = '<a href="view.php?courseid='.$courseid.'&chartid='.$row->id.'">'.$name.'</a>';
+                        //echo $name;
+                        $charttext .= '<tr><td>'.$name.'</td><td>'.$currentqresult.'</td></tr>';
+         	}
+                $currentqresult = '';;
+
+
+
+
+	}
+    $content->text .= $charttext;
+    //echo $content->;
+
+} else {
+
+
+
+	//Add each chart for this course!
         $orphaned = array();
         $title = array();
+     //   print_object($title);
 	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
-	foreach ($result as &$row) {
+	foreach ($result as $row) {
+
 	   //print_object($row);
           $q = 'chart="'.$row->id.'"';
 	  //$this->content->items[] = html_writer::tag('a', ($row->name == '') ? 'Untitled' : $row->name, array('href' => $row->pageurl));
@@ -148,17 +230,17 @@ $charttext='';
           }
 	  //$charttext .= get_sheet_in_course($courseid, $q);
 	}
+//echo "CHARTTEXT=".$charttext;
 
-
-  if ($charttext == ''){
+  if ($charttext === ''){
 
     //$charttext .= '<tr><td>No charts in this course</td></tr>';
-    $charttext .= "<tr><td><h3>Charts/Graphs</h3></td></tr><tr><th>Name</th><th>Page Location</th></tr><tr><td>No charts in this course</td></tr>".$charttext;
+    $charttext .= "<tr><td><h3>Charts/Graphs</h3></td><td></td></tr><tr><td>No charts in this course</td></tr>";
     } else {
-    $charttext .= "<tr><td><h3>Charts/Graphs</h3></td></tr><tr><th>Name</th><th>Page Location</th></tr>".$charttext;
+    $charttext = "<tr><td><h3>Charts/Graphs</h3></td><td></td></tr><tr><th>Name</th><th>Page Location</th></tr>".$charttext;
     }
 
-
+/*
   //add orphaned to output
    $charttext .= '<tr><th>Orphaned Charts</th></tr>';
    $i=0;
@@ -167,11 +249,13 @@ $charttext='';
    $i++;
    }
 
-
+*/
 
        $content->text .= $charttext;
 
+}  //end if courseid==0
 
+//echo "<pre>".$content->text."</pre>";
 
        //$content->text .= html_writer::tag('a', 'Open Manager', array('href' => $CFG->wwwroot.'/blocks/spreadman/detail.php'));
   //$this->content->items[] = html_writer::tag('a', 'Menu Option 1', array('href' => 'some_file.php'));
@@ -184,6 +268,11 @@ $charttext='';
   echo $content->text.'</table>';
 
   echo $OUTPUT->footer();
+
+
+
+
+
 function get_sheet_in_course($courseid, $q)
 {
 global $DB;

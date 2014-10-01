@@ -32,7 +32,7 @@ if ($courseid === "1") {
 	$courses = enrol_get_my_courses();
 
 	//print_object($courses);
-
+/*
 	foreach ($courses as $course){
 
 	$result = $DB->get_records('filter_spreadsheet_sheet',array('userid'=>$USER->id));
@@ -45,7 +45,7 @@ if ($courseid === "1") {
 
 	}
 
-
+*/
 
 } else {
 
@@ -69,12 +69,13 @@ if ($courseid === "1") {
 //Now get all charts
 $charttext='';
 if ($courseid === "1") {
+
         //Must be my home page!  Get all psreadsheets from all courses.
 	echo "Must be my home page";
 	$courses = enrol_get_my_courses();
 
 	//print_object($courses);
-
+/*
 	foreach ($courses as $course){
 
 	$result = $DB->get_records('filter_chart_users',array('userid'=>$USER->id));
@@ -86,7 +87,7 @@ if ($courseid === "1") {
 		}
 
 	}
-
+*/
 
 
 } else {
