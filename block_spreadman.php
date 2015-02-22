@@ -34,7 +34,7 @@ class block_spreadman extends block_base {
         //print_object($result);
         $course               = $this->page->course;
         $courseid             = $course->id;
-        //echo "courseid=$courseid";
+        echo "courseid=$courseid";
         $this->content        = new stdClass;
         $this->content->items = array();
         $this->content->icons = array();

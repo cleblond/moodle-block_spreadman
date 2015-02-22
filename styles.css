@@ -22,3 +22,5 @@ table.spreadman td {
 	background-color: #ffffff;
 }
 
+
+table.spreadman td:first-child { width: 30%; }

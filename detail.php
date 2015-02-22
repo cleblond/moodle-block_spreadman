@@ -59,9 +59,8 @@ $content->items = array();
 $spreadtext     = '';
 $currentqresult = '';
 // Get all spreadsheets
-if ($courseid === 0) {
-    $content->text = '<tr><th><h3>Spreadsheets</h3></th></tr>';
-    //Must be my home page!  Get all psreadsheets from all courses.
+if ($courseid === 0) {   // Get orphaned spreadsheets
+    $content->text = '<table class="spreadman"><tr><th colspan="2"><h3>Spreadsheets</h3></th></tr>';
     $courses       = enrol_get_my_courses();
     //print_object($courses);
     $result        = $DB->get_records('filter_spreadsheet_sheet', array(
@@ -72,6 +71,7 @@ if ($courseid === 0) {
             $q = 'eo_spreadsheet ' . $row->sheetid;
             $currentqresult .= get_sheet_in_course($course->id, $q);
         }
+
         if ($currentqresult === '') {
             $name = ($row->name == NULL) ? 'Untitled Sheet' : $row->name;
             $name = '<a href="view.php?courseid=' . $courseid . '&sheetid=' . $row->sheetid . '">' . $name . '</a>';
@@ -84,7 +84,7 @@ if ($courseid === 0) {
     $content->text .= $cselector . $spreadtext . '</table>';
     //echo $content->;
 } else {
-    $content->text = '<tr><th><h3>Spreadsheets</h3></th></tr>';
+    $content->text = '<table class="spreadman"><tr><th colspan="2"><h3>Spreadsheets</h3></th></tr>';
     //Add each spreadsheet for this course to block!
     $orphaned      = array();
     $title         = array();
@@ -117,7 +117,7 @@ if ($courseid === 0) {
 //Now get all charts
 $charttext = '';
 if ($courseid === 0) {
-    $charttext .= '<table class="spreadman"><tr><th><h3>Charts</h3></th><th>' . $currentqresult . '</th></tr>';
+    $charttext .= '<table class="spreadman"><tr><th colspan="2"><h3>Charts</h3></th></tr>';
     $courses = enrol_get_my_courses();
     //print_object($courses);
     $result  = $DB->get_records('filter_chart_users', array(
@@ -131,7 +131,7 @@ if ($courseid === 0) {
         if ($currentqresult === '') {
             $name = ($row->title == NULL) ? 'Untitled Chart' : $row->title;
             $name = '<a href="view.php?courseid=' . $courseid . '&chartid=' . $row->id . '">' . $name . '</a>';
-            $charttext .= '<tr><td>' . $name . '</td><td>' . $currentqresult . '</td></tr>';
+            $charttext .= '<tr><td>' . $name . '</td></tr>';
         }
         $currentqresult = '';
         ;
@@ -139,12 +139,17 @@ if ($courseid === 0) {
     $content->text .= $charttext . '</table>';
 } else {
     //Add each chart for this course!
-    $charttext .= '<table class="spreadman"><tr><th><h3>Charts</h3></th></tr>';
+    $charttext .= '<table class="spreadman"><tr><th colspan="2"><h3>Charts</h3></th></tr>';
     $orphaned = array();
     $title    = array();
-    $result   = $DB->get_records('filter_chart_users', array(
-        'userid' => $USER->id
-    ));
+    
+
+    if ($result   = $DB->get_records('filter_chart_users', array('userid' => $USER->id))) {
+    $charttext .= '<tr><th>Name</th><th>Page Location</th></tr>';
+    } else {
+    $charttext .= '<table class="spreadman"><tr><td><h3>Charts</h3></td><td></td></tr><tr><td>No charts in this course</td></tr>';
+    }
+
     foreach ($result as $row) {
         $q              = 'eo_chart ' . $row->id;
         $name           = ($row->title == NULL) ? 'Untitled Chart' : $row->title;
@@ -158,12 +163,12 @@ if ($courseid === 0) {
             ///orphan sheet
         }
     }
-    if ($charttext === '') {
+  /*  if ($charttext === '') {
         //$charttext .= '<tr><td>No charts in this course</td></tr>';
         $charttext .= '<table class="spreadman"><tr><td><h3>Charts</h3></td><td></td></tr><tr><td>No charts in this course</td></tr>';
     } else {
-        $charttext .= '<tr><th>Name</th><th>Page Location</th></tr>' . $charttext;
-    }
+
+    }   */
     $content->text .= $charttext . '</table>';
 } //end if courseid==0
 echo $content->text;
