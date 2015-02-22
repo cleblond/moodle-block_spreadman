@@ -1,0 +1,14 @@
+Moodle Block that displays all speadsheets and charts created using the
+moodle-atto_chart/moodle-filter_chart and moodle-atto_spreadsheet/moodle-filter_spreadsheet
+plugins.
+
+The block displays all spreadsheets in current course.  Clicking the "Open Manager"
+link opens a manager in which users can browse all spreadsheets by course with links to 
+the pages where the spreadsheet/chart resides.  You can alos view all
+orphaned charts/spreadsheets.  Orphaned spreadsheets/charts are those that are currently
+not used in any courses.
+
+Todo List
+* Need way to delete charts and spreadsheets from DB.
+* Need way to insert existing (and orphaned) spreadsheets/charts.
+ 
